@@ -38,11 +38,216 @@ header .branding h1{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weig
 .kpi-alarms{color:var(--red);}
 .kpi-nodes{color:var(--green);}
 .kpi-oil{color:var(--orange);}
-.reactor-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-.reactor-grid.single-view{grid-template-columns:1fr;}
-.reactor-grid.single-view .card{display:none;}
-.reactor-grid.single-view .card.zoom-focused{display:flex!important;}
-@media(max-width:1100px){.reactor-grid{grid-template-columns:1fr!important;}}
+
+/* ─── COMPACT GRID VIEW ─── */
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 25px;
+}
+@media(max-width: 1400px) { .compact-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width: 700px) { .compact-grid { grid-template-columns: 1fr; } }
+
+.compact-card {
+  background: linear-gradient(145deg, var(--panel), var(--panel2));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.compact-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.5;
+}
+.compact-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 10px 30px rgba(0,229,255,0.15), 0 0 15px rgba(0,229,255,0.1);
+  transform: translateY(-4px);
+}
+.compact-card.state-offline {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+}
+.compact-card.state-offline::before {
+  background: linear-gradient(90deg, transparent, var(--dim), transparent);
+}
+
+.compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6rem;
+  color: var(--green);
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-live 1.5s infinite;
+}
+.live-dot.offline {
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
+  animation: none;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.compact-motors {
+  display: flex;
+  gap: 12px;
+}
+.compact-motor {
+  flex: 1;
+  background: rgba(10, 18, 32, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  position: relative;
+}
+.compact-motor:hover {
+  background: rgba(0, 229, 255, 0.03);
+}
+.compact-motor.state-idle { border-color: var(--border); }
+.compact-motor.state-healthy {
+  border-color: var(--green);
+  box-shadow: inset 0 0 15px rgba(57,255,20,0.05), 0 0 10px rgba(57,255,20,0.1);
+}
+.compact-motor.state-abnormal {
+  border-color: var(--red);
+  box-shadow: inset 0 0 15px rgba(255,23,68,0.1), 0 0 10px rgba(255,23,68,0.2);
+  animation: pulse-border-red 2s infinite;
+}
+@keyframes pulse-border-red {
+  0%, 100% { box-shadow: inset 0 0 15px rgba(255,23,68,0.1), 0 0 10px rgba(255,23,68,0.2); }
+  50% { box-shadow: inset 0 0 20px rgba(255,23,68,0.2), 0 0 15px rgba(255,23,68,0.4); }
+}
+
+.compact-motor-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  color: var(--cyan);
+  text-align: center;
+  width: 100%;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.compact-gauge-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.compact-metrics {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  gap: 8px;
+}
+.compact-metric {
+  text-align: center;
+  flex: 1;
+  background: var(--panel2);
+  border-radius: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+}
+.compact-metric-label {
+  font-size: 0.5rem;
+  color: var(--dim);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.compact-metric-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--cyan);
+  text-shadow: 0 0 5px rgba(0,229,255,0.3);
+  white-space: nowrap;
+}
+
+.compact-sparkline {
+  width: 100%;
+  height: 25px;
+  background: rgba(0,229,255,0.03);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.compact-status-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+.compact-status-row .condition-pill {
+  flex: 1;
+  height: 22px;
+  font-size: 0.6rem;
+}
+.compact-oil-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--oil-bar-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border);
+}
+.compact-oil-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s, background 0.6s;
+  box-shadow: 0 0 5px currentColor;
+}
+
+/* ─── DETAILED VIEW ─── */
+.detail-container {
+  display: none;
+  max-width: 1700px;
+  margin: auto;
+}
+.detail-container .card {
+  display: none;
+  width: 100%;
+  margin-bottom: 20px;
+}
+.detail-container .card.visible {
+  display: flex;
+}
+
 .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative;min-height:680px;}
 .card.critical-alert-border{border-color:var(--red)!important;box-shadow:0 0 20px rgba(255,23,68,0.15);}
 .reactor-header{display:flex;align-items:center;justify-content:space-between;position:relative;}
@@ -220,115 +425,32 @@ tr:hover{background:var(--table-hover);}
 
 <header>
   <div class="branding">
-    <!-- REPLACED HEADER WITH AMCHEM LOGO AND TITLE -->
     <h1>
       <svg width="40" height="40" viewBox="0 0 100 100" style="display:inline-block; vertical-align:middle;">
         <path d="M 50 10 L 90 80 L 10 80 Z M 50 25 L 75 70 L 25 70 Z" fill="#2ca05a" />
         <path d="M 50 10 L 10 80 L 90 80 Z M 50 25 L 25 70 L 75 70 Z" fill="#2ca05a" />
         <path d="M 50 10 L 90 80 L 10 80 Z" fill="none" stroke="#2ca05a" stroke-width="0" /> 
-        <!-- Constructing the specific Penrose-like triangle logo from image -->
         <g transform="translate(0,0)">
-           <!-- Left Leg -->
            <polygon points="50,15 15,85 30,85 50,45 70,85 85,85" fill="#2ca05a" />
-           <!-- Right Leg -->
-           <polygon points="50,15 85,85 70,85 50,45 30,85 15,85" fill="#2ca05a" opacity="0" /> <!-- Placeholder for alignment -->
-           
-           <!-- Precise reconstruction based on visual analysis -->
-           <!-- Outer Triangle Points roughly: Top(50,15), BottomLeft(15,85), BottomRight(85,85) -->
-           <!-- It is composed of two interlocking shapes or a single path with gaps. -->
-           <!-- Let's use the exact shape paths derived from the visual structure -->
+           <polygon points="50,15 85,85 70,85 50,45 30,85 15,85" fill="#2ca05a" opacity="0" /> 
            <path d="M 50 15 L 85 80 L 70 80 L 50 45 L 30 80 L 15 80 Z" fill="#2ca05a" />
-           <!-- The inner white gap creates the illusion. The logo is actually two separate green shapes or one complex one. 
-                Looking closely at the provided image:
-                It looks like an 'A' or Triangle made of two thick strokes that don't touch at the top.
-           -->
            <path d="M 50 15 L 15 80 L 30 80 L 50 45 L 70 80 L 85 80 Z" fill="#2ca05a" />
-           <!-- Wait, the image has a split at the top. Left side goes up, Right side goes up. They don't meet. -->
-           <!-- Left Shape: Starts mid-left, goes up to top-center-left, down to bottom-center, out to bottom-left -->
-           <!-- Right Shape: Starts mid-right, goes up to top-center-right, down to bottom-center, out to bottom-right -->
-           
-           <!-- Refined Path for Exact Match -->
-           <!-- Left Part -->
            <polygon points="48,18 18,82 32,82 50,48 68,82 82,82 52,18" fill="none" /> 
-           
-           <!-- Let's try a simpler approach that matches the visual weight perfectly -->
            <path d="M 50 15 L 82 80 L 68 80 L 50 45 L 32 80 L 18 80 Z" fill="#2ca05a" />
-           <!-- This creates a solid triangle. We need the split top. -->
            <path d="M 50 15 L 18 80 L 32 80 L 50 45 L 68 80 L 82 80 Z" fill="#2ca05a" />
-           
-           <!-- ACTUAL RECONSTRUCTION OF THE SPECIFIC LOGO PROVIDED -->
-           <!-- It consists of two distinct green polygons that form a triangle with a gap at the apex -->
-           <!-- Polygon 1 (Left Side): -->
            <polygon points="49,18 18,82 33,82 50,48 67,82 82,82" fill="#2ca05a" />
-           <!-- Polygon 2 (Right Side - overlapping slightly or separate?) -->
-           <!-- Actually, looking at the very specific "impossible triangle" style or just the stylized A: -->
-           <!-- It looks like two chevrons. -->
-           
-           <!-- Final Best Fit Path -->
            <path d="M 50 15 L 85 80 L 70 80 L 50 45 L 30 80 L 15 80 Z" fill="#2ca05a" />
-           <!-- To get the split top, we draw two separate paths -->
            <path d="M 48 18 L 15 80 L 30 80 L 48 45 L 66 80 L 81 80 L 52 18 L 48 18 Z" fill="#2ca05a" />
-           <!-- No, that connects them. -->
-           
-           <!-- Correct Split Top Logic -->
            <path d="M 48 18 L 15 80 L 30 80 L 48 45 L 66 80 L 81 80 L 52 18" fill="none" stroke="#2ca05a" stroke-width="14" stroke-linejoin="miter" />
-           <!-- This stroke method might round the corners too much. Polygons are better. -->
-           
-           <!-- Left Chevron -->
-           <polygon points="49,18 18,80 33,80 50,46 67,80 82,80 51,18" fill="#2ca05a" />
-           <!-- This is one piece. We need to cut the top. -->
-           
-           <!-- Okay, simple robust solution: Two Polygons -->
-           <!-- Left Half -->
-           <polygon points="49,18 18,80 33,80 50,46 49,18" fill="#2ca05a" />
-           <!-- Right Half -->
+           <polygon points="49,18 18,80 32,80 50,46 67,80 82,80 51,18" fill="#2ca05a" />
+           <polygon points="49,18 18,80 32,80 50,46 49,18" fill="#2ca05a" />
            <polygon points="51,18 82,80 67,80 50,46 51,18" fill="#2ca05a" />
-           <!-- Bottom Connector? The image shows a continuous base? No, it looks like two legs meeting at bottom center? 
-                Actually, looking at the image again: It is a single triangle outline but thick, with a break at the top right leg? 
-                No, it's the "Amchem" style logo which is often a triangle. 
-                Let's look at the user image crop. 
-                It is a Green Triangle. 
-                Left side is solid. Right side is solid. 
-                There is a white line cutting through the right leg? Or is it two separate triangles?
-                It looks like one large triangle outline, but the top vertex is split into two points.
-                And there is an inner triangle hole.
-           -->
-           
-           <!-- Definitive Path Construction -->
-           <!-- Outer boundary with split top -->
-           <!-- Left Point: 48,18. Right Point: 52,18. Bottom Left: 15,80. Bottom Right: 85,80. -->
-           <!-- Inner Hole: Top: 50,45. Bottom Left: 30,70. Bottom Right: 70,70. -->
-           
            <path d="M 48 18 L 15 80 L 85 80 L 52 18 L 48 18 Z M 50 42 L 30 72 L 70 72 L 50 42 Z" fill="#2ca05a" fill-rule="evenodd" />
-           <!-- This creates a triangle with a hole, but connected top. 
-                The user image has a SPLIT top. 
-                So we remove the connection between 48,18 and 52,18.
-           -->
            <path d="M 48 18 L 15 80 L 85 80 L 52 18" fill="none" stroke="#2ca05a" stroke-width="12" stroke-linejoin="round" />
-           <!-- And the inner hole needs to be defined by the thickness or a separate path. 
-                Since stroke doesn't do holes easily without complex rules, let's use the polygon method which is safer for "exact" looks.
-           -->
-           
-           <!-- FINAL ATTEMPT AT EXACT VISUAL MATCH -->
-           <!-- Shape 1: Left part of the frame -->
            <polygon points="49,18 18,80 32,80 50,46 68,80 82,80 51,18" fill="#2ca05a" />
-           <!-- Wait, the image shows the right leg is broken? Or is it just the style? 
-                Ah, I see the image clearly now. It is a triangle where the right side has a diagonal white slash through it? 
-                No, it's two separate green shapes forming a triangle. 
-                Left shape: A chevron. Right shape: A chevron. 
-                They meet at the bottom. They are separated at the top.
-           -->
-           
-           <!-- Left Chevron -->
            <polygon points="49,18 18,80 32,80 50,46 68,80 82,80" fill="#2ca05a" /> 
-           <!-- This connects them at bottom. 
-                Let's assume the standard Amchem logo geometry: 
-                It is a triangle with a gap at the top vertex.
-           -->
            <path d="M 49 18 L 18 80 L 82 80 L 51 18" fill="none" stroke="#2ca05a" stroke-width="14" stroke-linejoin="miter" />
-           <!-- And the inner cutout -->
            <path d="M 50 45 L 30 75 L 70 75 Z" fill="var(--bg)" /> 
-           <!-- Using var(--bg) for the hole ensures it matches the theme background automatically! Smart. -->
         </g>
       </svg>
       AMCHEM PLANT EQUIPMENT DASHBOARD
@@ -355,7 +477,224 @@ tr:hover{background:var(--table-hover);}
   <div class="kpi-card"><span class="kpi-title">Oil Change Alerts</span><span class="kpi-value kpi-oil" id="global_oil_alerts">0 Motors</span></div>
 </div>
 
-<div class="reactor-grid" id="main_dashboard_grid">
+<!-- ══════════════ COMPACT GRID VIEW ══════════════ -->
+<div class="compact-grid" id="compact_grid_view">
+  <!-- R1 -->
+  <div class="compact-card" id="c_card_R1" onclick="setDashboardView('R1')">
+    <div class="compact-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="reactor-title" style="font-size:0.9rem;">⚛ REACTOR 1</div>
+        <div class="live-indicator">
+          <div class="live-dot" id="c_live_R1"></div>
+          <span id="c_live_text_R1">LIVE</span>
+        </div>
+      </div>
+      <div class="status-badge badge-offline" id="c_R1_status">OFFLINE</div>
+    </div>
+    <div class="compact-motors">
+      <div class="compact-motor state-idle" id="c_block_R1_M1">
+        <div class="compact-motor-title">M1 · BACKUP</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R1_M1" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R1_M1_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R1_M1_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R1_M1" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R1_M1">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R1_M1" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="compact-motor state-idle" id="c_block_R1_M2">
+        <div class="compact-motor-title">M2 · BOOSTER</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R1_M2" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R1_M2_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R1_M2_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R1_M2" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R1_M2">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R1_M2" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- R2 -->
+  <div class="compact-card" id="c_card_R2" onclick="setDashboardView('R2')">
+    <div class="compact-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="reactor-title" style="font-size:0.9rem;">⚛ REACTOR 2</div>
+        <div class="live-indicator">
+          <div class="live-dot" id="c_live_R2"></div>
+          <span id="c_live_text_R2">LIVE</span>
+        </div>
+      </div>
+      <div class="status-badge badge-offline" id="c_R2_status">OFFLINE</div>
+    </div>
+    <div class="compact-motors">
+      <div class="compact-motor state-idle" id="c_block_R2_M1">
+        <div class="compact-motor-title">M1 · BACKUP</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R2_M1" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R2_M1_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R2_M1_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R2_M1" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R2_M1">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R2_M1" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="compact-motor state-idle" id="c_block_R2_M2">
+        <div class="compact-motor-title">M2 · BOOSTER</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R2_M2" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R2_M2_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R2_M2_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R2_M2" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R2_M2">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R2_M2" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- R3 -->
+  <div class="compact-card" id="c_card_R3" onclick="setDashboardView('R3')">
+    <div class="compact-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="reactor-title" style="font-size:0.9rem;">⚛ REACTOR 3</div>
+        <div class="live-indicator">
+          <div class="live-dot" id="c_live_R3"></div>
+          <span id="c_live_text_R3">LIVE</span>
+        </div>
+      </div>
+      <div class="status-badge badge-offline" id="c_R3_status">OFFLINE</div>
+    </div>
+    <div class="compact-motors">
+      <div class="compact-motor state-idle" id="c_block_R3_M1">
+        <div class="compact-motor-title">M1 · BACKUP</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R3_M1" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R3_M1_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R3_M1_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R3_M1" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R3_M1">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R3_M1" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="compact-motor state-idle" id="c_block_R3_M2">
+        <div class="compact-motor-title">M2 · BOOSTER</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R3_M2" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R3_M2_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R3_M2_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R3_M2" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R3_M2">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R3_M2" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- R4 -->
+  <div class="compact-card" id="c_card_R4" onclick="setDashboardView('R4')">
+    <div class="compact-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="reactor-title" style="font-size:0.9rem;">⚛ REACTOR 4</div>
+        <div class="live-indicator">
+          <div class="live-dot" id="c_live_R4"></div>
+          <span id="c_live_text_R4">LIVE</span>
+        </div>
+      </div>
+      <div class="status-badge badge-offline" id="c_R4_status">OFFLINE</div>
+    </div>
+    <div class="compact-motors">
+      <div class="compact-motor state-idle" id="c_block_R4_M1">
+        <div class="compact-motor-title">M1 · BACKUP</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R4_M1" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R4_M1_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R4_M1_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R4_M1" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R4_M1">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R4_M1" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="compact-motor state-idle" id="c_block_R4_M2">
+        <div class="compact-motor-title">M2 · BOOSTER</div>
+        <div class="compact-gauge-wrap"><canvas id="c_gauge_R4_M2" width="110" height="65"></canvas></div>
+        <div class="compact-metrics">
+          <div class="compact-metric">
+            <div class="compact-metric-label">AMPS</div>
+            <div class="compact-metric-val" id="c_R4_M2_amps">0.00</div>
+          </div>
+          <div class="compact-metric">
+            <div class="compact-metric-label">TEMP</div>
+            <div class="compact-metric-val" id="c_R4_M2_temp">--</div>
+          </div>
+        </div>
+        <canvas class="compact-sparkline" id="c_spark_R4_M2" width="140" height="25"></canvas>
+        <div class="compact-status-row">
+          <div class="condition-pill pill-idle" id="c_pill_R4_M2">IDLE</div>
+          <div class="compact-oil-bar" title="Oil Health"><div class="compact-oil-fill" id="c_oil_R4_M2" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DETAILED VIEW ══════════════ -->
+<div class="detail-container" id="detail_view">
 
 <!-- ══════════════ REACTOR 1 ══════════════ -->
 <div class="card" id="card_R1">
@@ -370,7 +709,6 @@ tr:hover{background:var(--table-hover);}
     <div class="status-badge badge-offline" id="R1_status">OFFLINE</div>
   </div>
   <div class="motors-row">
-    <!-- R1 M1 -->
     <div class="motor-block state-idle" id="block_R1_M1">
       <div class="motor-block-title title-idle" id="title_R1_M1">
         <svg class="pump-icon" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>
@@ -393,7 +731,6 @@ tr:hover{background:var(--table-hover);}
       </div>
       <div class="peak-registry"><span id="R1_M1_peak_amps">Pk: 0.00A</span><span id="R1_M1_peak_temp">Pk: --</span></div>
       <canvas class="sparkline-canvas" id="spark_R1_M1" width="165" height="20"></canvas>
-      <!-- OIL PANEL -->
       <div class="oil-panel" id="oilpanel_R1_M1">
         <div class="oil-panel-header">
           <div class="oil-panel-title oil-title-idle" id="oiltitle_R1_M1">🛢 OIL HEALTH — M1</div>
@@ -419,7 +756,6 @@ tr:hover{background:var(--table-hover);}
         </div>
       </div>
     </div>
-    <!-- R1 M2 -->
     <div class="motor-block state-idle" id="block_R1_M2">
       <div class="motor-block-title title-idle" id="title_R1_M2">
         <svg class="pump-icon" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,12M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>
@@ -671,7 +1007,35 @@ tr:hover{background:var(--table-hover);}
 <div class="modal-overlay" id="maint_modal">
   <div class="modal">
     <div class="modal-title" id="maint_modal_title">🛠️ REPORT DOWNTIME</div>
-    <div class="modal-field"><label>EQUIPMENT NAME</label><input type="text" id="inp_equip" placeholder="e.g. Cooling Pump A"></div>
+    <div class="modal-field">
+      <label>EQUIPMENT NAME</label>
+      <select id="inp_equip" onchange="updateProblemDropdown()">
+        <option value="">-- Select Equipment --</option>
+        <option value="Agitator shaft">Agitator shaft</option>
+        <option value="Agitator motor">Agitator motor</option>
+        <option value="Agitator gearbox">Agitator gearbox</option>
+        <option value="Agitator Belt">Agitator Belt</option>
+        <option value="Recirculation pump">Recirculation pump</option>
+        <option value="Recirculation motor">Recirculation motor</option>
+        <option value="Recirculation belt">Recirculation belt</option>
+        <option value="Backup pump">Backup pump</option>
+        <option value="Backup pump motor">Backup pump motor</option>
+        <option value="Booster 1 pump">Booster 1 pump</option>
+        <option value="Booster 1 pump motor">Booster 1 pump motor</option>
+        <option value="Booster 2 pump">Booster 2 pump</option>
+        <option value="Booster 2 pump motor">Booster 2 pump motor</option>
+        <option value="Discharge filter">Discharge filter</option>
+        <option value="Others">If Others specify</option>
+      </select>
+    </div>
+    <div class="modal-field" id="problem_field_wrap" style="display:none;">
+      <label>PROBLEM / ISSUE</label>
+      <select id="inp_problem"></select>
+    </div>
+    <div class="modal-field" id="others_field_wrap" style="display:none;">
+      <label>SPECIFY EQUIPMENT & PROBLEM</label>
+      <input type="text" id="inp_others" placeholder="e.g. Cooling pump - Leak">
+    </div>
     <div class="modal-field"><label>MANPOWER & JOB DETAILS</label><input type="text" id="inp_manpower" placeholder="e.g. 2 Techs (Mechanical Team)"></div>
     <div class="modal-field"><label>START DATE & TIME</label><input type="datetime-local" id="inp_start"></div>
     <div class="modal-field"><label>END DATE & TIME (Leave empty if Ongoing)</label><input type="datetime-local" id="inp_end"></div>
@@ -783,8 +1147,8 @@ const DBS = {};
 const OFFLINE_MS  = 60000;
 const MAX_ALARM   = 200;
 const DEFAULT_CFG = { voltage:400, pf:0.85, threshold:10, gaugeMax:20 };
-const OIL_CHANGE_INTERVAL = 2000; // hours
-const OIL_CAUTION_HOURS   = 1800; // warn at 1800h
+const OIL_CHANGE_INTERVAL = 2000;
+const OIL_CAUTION_HOURS   = 1800;
 const OIL_CHECK_INTERVAL_DAYS = 14;
 const REACTORS = ['R1','R2','R3','R4'];
 
@@ -796,21 +1160,14 @@ function makeMot(label){
     inAlarm:false, lastAlarmMinute:-1,
     peakAmps:0, peakTemp:-127,
     historyBuffer:[],
-    oil: {
-      grade: '--',
-      lastChangeTimestamp: null,
-      lastChangeRunHours: 0,
-      lastCheckDate: null,
-      oilRunHoursSinceChange: 0
-    }
+    oil: { grade: '--', lastChangeTimestamp: null, lastChangeRunHours: 0, lastCheckDate: null, oilRunHoursSinceChange: 0 }
   };
 }
 
 const state = { audioAlarmEnabled:true, viewMode:'all' };
 REACTORS.forEach(R => {
   state[R] = {
-    online:false, hb:0,
-    lastDataTimestampFromServer:null,
+    online:false, hb:0, lastDataTimestampFromServer:null,
     alarmLog:[], runLog:[], history:[], maintLog:{}, oilLog:[],
     motors:{ M1:makeMot('M1-BackupPump'), M2:makeMot('M2-Booster2') }
   };
@@ -833,6 +1190,11 @@ async function initMotor(R, M){
   el(`gsub_${R}_${M}`).textContent = `MAX ${mot.cfg.gaugeMax}A · THR ${mot.cfg.threshold}A`;
   drawGauge(`gauge_${R}_${M}`, 0, 'idle', mot.cfg);
   drawSparkline(`spark_${R}_${M}`, []);
+  
+  const c_amps = el(`c_${R}_${M}_amps`);
+  if(c_amps) c_amps.textContent = '0.00';
+  drawCompactGauge(`c_gauge_${R}_${M}`, 0, 'idle', mot.cfg);
+  drawCompactSparkline(`c_spark_${R}_${M}`, []);
 }
 
 function buildDropdownDateSelectors(){
@@ -855,7 +1217,6 @@ Promise.all(REACTORS.flatMap(R => ['M1','M2'].map(M => initMotor(R, M)))).then((
   setInterval(() => { REACTORS.forEach(R => ['M1','M2'].forEach(M => updateOilPanel(R, M))); }, 30000);
 });
 
-/* ═══ HEARTBEAT ═══ */
 function updateHeartbeatDeltas(){
   REACTORS.forEach(R => {
     const rs = state[R];
@@ -868,7 +1229,6 @@ function updateHeartbeatDeltas(){
   });
 }
 
-/* ═══ THEME ═══ */
 window.toggleThemeEngine = function(){
   const body = document.body;
   const themeBtn = el('toggle_theme');
@@ -878,18 +1238,33 @@ window.toggleThemeEngine = function(){
     const mot = state[R].motors[M];
     drawGauge(`gauge_${R}_${M}`, mot.amps, mot.condition, mot.cfg);
     drawSparkline(`spark_${R}_${M}`, mot.historyBuffer);
+    drawCompactGauge(`c_gauge_${R}_${M}`, mot.amps, mot.condition, mot.cfg);
+    drawCompactSparkline(`c_spark_${R}_${M}`, mot.historyBuffer);
   }));
 };
 
 window.setDashboardView = function(view){
-  const grid = el('main_dashboard_grid');
+  const compactGrid = el('compact_grid_view');
+  const detailView = el('detail_view');
   document.querySelectorAll('.nav-pills .nav-btn').forEach(b => b.classList.remove('active'));
+  
   if(view === 'all'){
-    state.viewMode = 'all'; grid.classList.remove('single-view'); el('btn_view_all').classList.add('active');
-    REACTORS.forEach(R => el(`card_${R}`).classList.remove('zoom-focused'));
+    state.viewMode = 'all';
+    compactGrid.style.display = 'grid';
+    detailView.style.display = 'none';
+    el('btn_view_all').classList.add('active');
+    REACTORS.forEach(R => el(`card_${R}`).classList.remove('visible'));
   } else {
-    state.viewMode = 'single'; grid.classList.add('single-view'); el(`btn_view_${view.toLowerCase()}`).classList.add('active');
-    REACTORS.forEach(R => { if(R === view) el(`card_${R}`).classList.add('zoom-focused'); else el(`card_${R}`).classList.remove('zoom-focused'); });
+    state.viewMode = 'single';
+    compactGrid.style.display = 'none';
+    detailView.style.display = 'block';
+    el(`btn_view_${view.toLowerCase()}`).classList.add('active');
+    
+    REACTORS.forEach(R => {
+      const card = el(`card_${R}`);
+      if(R === view) card.classList.add('visible');
+      else card.classList.remove('visible');
+    });
   }
 };
 
@@ -927,7 +1302,6 @@ function renderGlobalKPIs(){
   else { document.documentElement.style.setProperty('--critical-tint', document.body.classList.contains('dark-theme') ? '#060a14' : '#f0f4f8'); }
 }
 
-/* ═══ OIL PANEL UPDATER ══ */
 function updateOilPanel(R, M){
   const mot = state[R].motors[M];
   const oil = mot.oil;
@@ -948,14 +1322,10 @@ function updateOilPanel(R, M){
 
   if(!panel) return;
 
-  // Grade badge
   grade.textContent = oil.grade !== '--' ? `GRADE: ${oil.grade}` : 'GRADE: --';
-
-  // Progress bar
   bar.style.width = `${pct.toFixed(1)}%`;
   el(`oilmarker_caution_${R}_${M}`).style.left = `${cautionPct}%`;
 
-  // Status logic
   if(oil.lastChangeTimestamp === null){
     panel.className = 'oil-panel';
     title.className = 'oil-panel-title oil-title-idle';
@@ -997,7 +1367,6 @@ function updateOilPanel(R, M){
   hrsEl.textContent = `${usedHrs.toFixed(0)}h`;
   remEl.textContent = `${remainHrs.toFixed(0)}h`;
 
-  // Last change date
   if(oil.lastChangeTimestamp){
     const d = new Date(oil.lastChangeTimestamp);
     lastEl.textContent = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'2-digit'});
@@ -1005,7 +1374,6 @@ function updateOilPanel(R, M){
     lastEl.textContent = '--';
   }
 
-  // Bi-weekly check due
   if(oil.lastCheckDate){
     const lastCheck = new Date(oil.lastCheckDate);
     const nextCheck = new Date(lastCheck.getTime() + OIL_CHECK_INTERVAL_DAYS * 24 * 3600 * 1000);
@@ -1024,12 +1392,17 @@ function updateOilPanel(R, M){
     checkEl.textContent = 'Not yet scheduled';
     checkEl.className = 'oil-check-due due-ok';
   }
+
+  const c_oil_bar = el(`c_oil_${R}_${M}`);
+  if(c_oil_bar) {
+    c_oil_bar.style.width = `${pct.toFixed(1)}%`;
+    if(oil.lastChangeTimestamp === null) c_oil_bar.style.background = 'var(--dim)';
+    else if(usedHrs >= OIL_CHANGE_INTERVAL) c_oil_bar.style.background = 'var(--red)';
+    else if(usedHrs >= OIL_CAUTION_HOURS) c_oil_bar.style.background = 'var(--orange)';
+    else c_oil_bar.style.background = 'var(--green)';
+  }
 }
 
-/* ═══ OIL RUNNING HOURS CALCULATOR ═══
-   Called after history rebuild. Calculates running hours since last oil change
-   by summing all running seconds from history rows AFTER the lastChangeTimestamp.
-*/
 function recalcOilHours(R){
   ['M1','M2'].forEach(M => {
     const mot = state[R].motors[M];
@@ -1049,17 +1422,12 @@ function recalcOilHours(R){
       const dt = (new Date(curr.timestamp) - new Date(prev.timestamp)) / 1000;
       if(dt > 0 && dt < 3600 && Number(prev[ctKey]||0) > 0.05) totalSec += dt;
     }
-    // Add current session runtime if motor is running and online
-    if(state[R].online && mot.amps > 0.05 && mot.lastTs){
-      // already tracked in mot.runSec - add today's portion beyond history
-    }
 
     oil.oilRunHoursSinceChange = (oil.lastChangeRunHours || 0) + (totalSec / 3600);
     updateOilPanel(R, M);
   });
 }
 
-/* ═══ OIL LOG RENDERER ═══ */
 function renderOilLog(R){
   const rs = state[R];
   const log = rs.oilLog || [];
@@ -1084,7 +1452,6 @@ function renderOilLog(R){
   }).join('');
 }
 
-/* ═══ OIL CHANGE MODAL ═══ */
 let _oilR = null, _oilM = null;
 
 window.openOilChangeModal = function(R, M){
@@ -1101,10 +1468,6 @@ window.openOilChangeModal = function(R, M){
   el('oil_change_modal').classList.add('open');
 };
 
-el('inp_oil_grade') && (el('inp_oil_grade').onchange = function(){
-  el('oil_custom_grade_field').style.display = this.value === 'CUSTOM' ? 'flex' : 'none';
-});
-// Defer since DOM is ready:
 document.getElementById('inp_oil_grade').addEventListener('change', function(){
   document.getElementById('oil_custom_grade_field').style.display = this.value === 'CUSTOM' ? 'flex' : 'none';
 });
@@ -1125,7 +1488,6 @@ window.saveOilChange = function(){
 
   const changeTs = new Date(changeTime).getTime();
 
-  // Update motor oil state
   mot.oil.grade = grade;
   mot.oil.lastChangeTimestamp = changeTs;
   mot.oil.lastChangeRunHours = 0;
@@ -1139,10 +1501,8 @@ window.saveOilChange = function(){
     changeDateTime: changeTime
   };
 
-  // Save to Firebase
   push(ref(DBS[_oilR], `oil_logs/${_oilM}`), entry)
     .then(() => {
-      // Also save oil config
       set(ref(DBS[_oilR], `oil_config/${_oilM}`), {
         grade, lastChangeTimestamp: changeTs, lastChangeRunHours: 0
       }).catch(()=>{});
@@ -1154,7 +1514,6 @@ window.saveOilChange = function(){
     .catch(err => alert('Error saving oil change: ' + err.message));
 };
 
-/* ═══ OIL CHECK MODAL ═══ */
 window.openOilCheckModal = function(R, M){
   _oilR = R; _oilM = M;
   const name = M === 'M1' ? 'BACKUP PUMP' : 'BOOSTER 2';
@@ -1204,7 +1563,6 @@ window.saveOilCheck = function(){
     .catch(err => alert('Error saving check: ' + err.message));
 };
 
-/* ═══ CONDITION / FORMATTERS ═══ */
 function getCondition(amps, thr){ if(amps <= 0.05) return 'idle'; if(amps > thr) return 'abnormal'; return 'healthy'; }
 const CMETA = {
   idle    :{ label:'⚪ IDLE',     pill:'pill-idle',     title:'title-idle',     block:'state-idle',     color:'#4a5a7a' },
@@ -1213,12 +1571,11 @@ const CMETA = {
 };
 function fmtRuntime(sec){ if(sec < 3600) return `${Math.floor(sec/60)} min`; const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
 function fmtKwh(kwh){ return kwh.toFixed(3); }
-function fmtTemp(v){ return (v===-127||v==='-127'||v===null||v===undefined)?'--':Number(v).toFixed(1)+' °C'; }
+function fmtTemp(v){ return (v===-127||v==='-127'||v===null||v===undefined)?'--':Number(v).toFixed(1)+'°C'; }
 function nowStr(){ const d=new Date(); return {date:d.toLocaleDateString('en-GB'),time:d.toLocaleTimeString('en-GB')}; }
 function minuteOfDay(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
 function el(id){ return document.getElementById(id); }
 
-/* ═══ CANVAS DRAWING ═══ */
 function drawSparkline(canvasId, dataPoints){
   const canvas = el(canvasId); if(!canvas) return;
   const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -1228,6 +1585,39 @@ function drawSparkline(canvasId, dataPoints){
   const max = Math.max(...dataPoints, 1); const step = canvas.width / (dataPoints.length - 1);
   dataPoints.forEach((p, i) => { const x=i*step, y=canvas.height-((p/max)*(canvas.height-4))-2; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
   ctx.stroke();
+}
+
+function drawCompactSparkline(canvasId, dataPoints) {
+  const canvas = el(canvasId); if(!canvas) return;
+  const ctx = canvas.getContext('2d'); 
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  if(dataPoints.length < 2) return;
+  
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  gradient.addColorStop(0, 'rgba(0, 229, 255, 0.3)');
+  gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
+  
+  const max = Math.max(...dataPoints, 1);
+  const step = W / (dataPoints.length - 1);
+  
+  ctx.beginPath();
+  dataPoints.forEach((p, i) => {
+    const x = i * step;
+    const y = H - ((p / max) * (H - 4)) - 2;
+    if(i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim();
+  ctx.stroke();
+  
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
 }
 
 function drawGauge(id, amps, cond, cfg){
@@ -1247,7 +1637,27 @@ function drawGauge(id, amps, cond, cfg){
   ctx.fillStyle=labelColor; ctx.font='9px Share Tech Mono'; ctx.fillText('AMPS',cx,cy-r*0.25+18);
 }
 
-/* ═══ LOG RENDERING ═══ */
+function drawCompactGauge(id, amps, cond, cfg){
+  const canvas = el(id); if(!canvas) return;
+  const ctx = canvas.getContext('2d'); const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const color = CMETA[cond].color;
+  const unfillColor = document.body.classList.contains('dark-theme') ? '#1a2d55' : '#bcd0e5';
+  const cx=W/2, cy=H-5, r=Math.min(W*0.45, H*0.9), ratio=Math.min(amps/cfg.gaugeMax, 1);
+  
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.strokeStyle=unfillColor; ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
+  
+  if(ratio>0){
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,Math.PI+ratio*Math.PI); ctx.strokeStyle=color; ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  
+  ctx.fillStyle=color; ctx.font='bold 14px Orbitron,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(amps.toFixed(1),cx,cy-r*0.35);
+}
+
 function renderAlarmLog(R){
   const rs = state[R];
   el(`${R}_alarm_count`).textContent = rs.alarmLog.length;
@@ -1282,7 +1692,6 @@ window.triggerGaugeDiagnostic = function(R, M){
   alert(`📊 Telemetry [${R} - ${M}]\n──────────────────────\nLoad Factor: ${((mot.amps/mot.cfg.threshold)*100).toFixed(1)}%\nPhase: 3-Phase Symmetric\nPF Index: ${mot.cfg.pf}\nOil Used: ${mot.oil.oilRunHoursSinceChange.toFixed(0)}h / 2000h\nOil Grade: ${mot.oil.grade}`);
 };
 
-/* ═══ MOTOR UI UPDATE ═══ */
 function updateMotorUI(R, M, amps, temp){
   const rs = state[R]; const mot = rs.motors[M]; const cfg = mot.cfg;
   const cond = getCondition(amps, cfg.threshold); const meta = CMETA[cond]; const now = Date.now();
@@ -1298,7 +1707,6 @@ function updateMotorUI(R, M, amps, temp){
     mot.runSec += dtSec;
     const powerKw = (Math.sqrt(3) * cfg.voltage * amps * cfg.pf) / 1000;
     mot.dailyKwh += powerKw * (dtSec / 3600);
-    // Accumulate oil hours in realtime
     if(mot.oil.lastChangeTimestamp) mot.oil.oilRunHoursSinceChange += dtSec / 3600;
   }
   mot.lastTs = now; mot.amps = amps;
@@ -1321,28 +1729,79 @@ function updateMotorUI(R, M, amps, temp){
   el(`${R}_${M}_temp`).textContent = fmtTemp(temp);
   el(`${R}_${M}_runtime`).textContent = fmtRuntime(Math.floor(mot.runSec));
   el(`${R}_${M}_energy`).textContent = fmtKwh(mot.dailyKwh);
-  // Update oil panel periodically
   if(Math.floor(mot.runSec) % 60 === 0) updateOilPanel(R, M);
+
+  updateCompactMotor(R, M, amps, temp, cond, meta);
+}
+
+function updateCompactMotor(R, M, amps, temp, cond, meta) {
+  const c_block = el(`c_block_${R}_${M}`);
+  if(c_block) {
+    c_block.className = `compact-motor state-${cond}`;
+  }
+  
+  const c_pill = el(`c_pill_${R}_${M}`);
+  if(c_pill) {
+    c_pill.textContent = meta.label;
+    c_pill.className = `condition-pill ${meta.pill}`;
+  }
+  
+  const c_amps = el(`c_${R}_${M}_amps`);
+  if(c_amps) {
+    c_amps.textContent = amps.toFixed(2);
+    c_amps.style.color = cond === 'abnormal' ? 'var(--red)' : cond === 'healthy' ? 'var(--green)' : 'var(--cyan)';
+    c_amps.style.textShadow = cond === 'abnormal' ? '0 0 8px var(--red)' : cond === 'healthy' ? '0 0 8px var(--green)' : '0 0 5px rgba(0,229,255,0.3)';
+  }
+  
+  const c_temp = el(`c_${R}_${M}_temp`);
+  if(c_temp) {
+    c_temp.textContent = fmtTemp(temp);
+    c_temp.style.color = (temp === -127 || temp === '-127') ? 'var(--dim)' : temp > 65 ? 'var(--red)' : temp > 45 ? 'var(--orange)' : 'var(--green)';
+  }
+  
+  drawCompactGauge(`c_gauge_${R}_${M}`, amps, cond, state[R].motors[M].cfg);
+  drawCompactSparkline(`c_spark_${R}_${M}`, state[R].motors[M].historyBuffer);
 }
 
 function setOnline(R, online){
   if(state[R].online === online) return;
   state[R].online = online;
   el(`conn_${R}`).className = online ? 'conn-dot online' : 'conn-dot offline';
+  
+  const liveDot = el(`c_live_${R}`);
+  const liveText = el(`c_live_text_${R}`);
+  if(liveDot) {
+    liveDot.className = online ? 'live-dot' : 'live-dot offline';
+  }
+  if(liveText) {
+    liveText.textContent = online ? 'LIVE' : 'OFFLINE';
+    liveText.style.color = online ? 'var(--green)' : 'var(--red)';
+  }
+  
+  const c_card = el(`c_card_${R}`);
+  if(c_card) {
+    if(!online) c_card.classList.add('state-offline');
+    else c_card.classList.remove('state-offline');
+  }
+  
   updateReactorStatusBadge(R);
 }
 
 function updateReactorStatusBadge(R){
   const badge = el(`${R}_status`);
+  const c_badge = el(`c_${R}_status`);
   const pending = Object.values(state[R].maintLog).filter(m => !m.endTime).length;
-  if(!state[R].online){ badge.textContent = 'OFFLINE'; badge.className = 'status-badge badge-offline'; }
-  else if(pending > 0){ badge.textContent = `️ ${pending} PENDING`; badge.className = 'status-badge badge-pending'; }
-  else { badge.textContent = 'ALL RUNNING'; badge.className = 'status-badge badge-online'; }
+  let text, cls;
+  if(!state[R].online){ text = 'OFFLINE'; cls = 'status-badge badge-offline'; }
+  else if(pending > 0){ text = `${pending} PENDING`; cls = 'status-badge badge-pending'; }
+  else { text = 'ALL RUNNING'; cls = 'status-badge badge-online'; }
+  
+  if(badge){ badge.textContent = text; badge.className = cls; }
+  if(c_badge){ c_badge.textContent = text; c_badge.className = cls; }
 }
 
 setInterval(() => { REACTORS.forEach(R => setOnline(R, (Date.now()-state[R].hb) < OFFLINE_MS)); }, 5000);
 
-/* ═══ HISTORY REBUILD ═══ */
 function rebuildDailyFromHistory(R){
   const today = new Date().toLocaleDateString('en-CA');
   const motors = { M1:{runSec:0, kwh:0}, M2:{runSec:0, kwh:0} };
@@ -1379,13 +1838,79 @@ function buildLogsFromHistory(R){
   renderLogs(R);
 }
 
-/* ═══ MAINTENANCE ═══ */
+const equipmentProblems = {
+  "Agitator shaft": ["Damage"],
+  "Agitator motor": ["Overcurrent", "Burning"],
+  "Agitator gearbox": ["Jamming", "Damage"],
+  "Agitator Belt": ["Broken"],
+  "Recirculation pump": ["Jamming", "Not working", "Damaged"],
+  "Recirculation motor": ["Overcurrent", "Burning"],
+  "Recirculation belt": ["broken"],
+  "Backup pump": ["not running", "overcurrent", "Jamming"],
+  "Backup pump motor": ["Overcurrent", "Burning"],
+  "Booster 1 pump": ["not running", "overcurrent", "Jamming"],
+  "Booster 1 pump motor": ["Overcurrent", "Burning"],
+  "Booster 2 pump": ["not running", "overcurrent", "Jamming"],
+  "Booster 2 pump motor": ["Overcurrent", "Burning"],
+  "Discharge filter": ["Jamming", "Seal damaged"]
+};
+
+window.updateProblemDropdown = function() {
+  const equip = el('inp_equip').value;
+  const problemWrap = el('problem_field_wrap');
+  const othersWrap = el('others_field_wrap');
+  const problemSelect = el('inp_problem');
+  
+  problemWrap.style.display = 'none';
+  othersWrap.style.display = 'none';
+  problemSelect.innerHTML = '';
+
+  if (equip === 'Others') {
+    othersWrap.style.display = 'flex';
+  } else if (equip !== '') {
+    problemWrap.style.display = 'flex';
+    const problems = equipmentProblems[equip] || [];
+    problems.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      problemSelect.appendChild(opt);
+    });
+  }
+};
+
 let _maintR = null, _activeClosingKey = null;
-window.openMaintModal = function(R){ _maintR=R; el('maint_modal_title').textContent=`🛠️ REPORT DOWNTIME — ${R}`; el('inp_equip').value=''; el('inp_manpower').value=''; el('inp_start').value=''; el('inp_end').value=''; el('maint_modal').classList.add('open'); };
+window.openMaintModal = function(R){ 
+  _maintR=R; 
+  el('maint_modal_title').textContent=`🛠️ REPORT DOWNTIME — ${R}`; 
+  el('inp_equip').value=''; 
+  el('problem_field_wrap').style.display='none';
+  el('others_field_wrap').style.display='none';
+  el('inp_problem').innerHTML='';
+  el('inp_others').value='';
+  el('inp_manpower').value=''; 
+  el('inp_start').value=''; 
+  el('inp_end').value=''; 
+  el('maint_modal').classList.add('open'); 
+};
 window.closeMaintModal = function(){ el('maint_modal').classList.remove('open'); _maintR=null; };
 window.saveMaintenance = function(){
   if(!_maintR) return;
-  const equip=el('inp_equip').value.trim(), manpower=el('inp_manpower').value.trim(), startVal=el('inp_start').value, endVal=el('inp_end').value;
+  const equipSelect = el('inp_equip').value;
+  let equip = equipSelect;
+  
+  if(equipSelect === 'Others') {
+    equip = el('inp_others').value.trim();
+    if(!equip){alert('Please specify the equipment and problem.');return;}
+  } else if(equipSelect === '') {
+    alert('Please select an Equipment Name.');
+    return;
+  } else {
+    const problem = el('inp_problem').value;
+    equip = `${equipSelect} - ${problem}`;
+  }
+
+  const manpower=el('inp_manpower').value.trim(), startVal=el('inp_start').value, endVal=el('inp_end').value;
   if(!equip||!startVal){alert('Equipment Name and Start Time are required.');return;}
   const startObj=new Date(startVal); const endObj=endVal?new Date(endVal):null;
   if(endObj&&endObj<startObj){alert('End time cannot be before start time.');return;}
@@ -1421,7 +1946,6 @@ function renderMaintLog(R){
   }).join('');
 }
 
-/* ═══ CSV EXPORT ═══ */
 window.downloadCSV = function(R, type){
   const rs = state[R];
   let csv='', filename='';
@@ -1444,7 +1968,6 @@ window.downloadCSV = function(R, type){
     rawArr.forEach(r=>{const sDate=new Date(r.startTime);const eDateStr=r.endTime?new Date(r.endTime).toLocaleDateString('en-GB')+' '+new Date(r.endTime).toLocaleTimeString('en-GB',{hour12:false}):'ONGOING';csv+=`"${r.equipment}","${r.manpower||'--'}","${sDate.toLocaleDateString('en-GB')} ${sDate.toLocaleTimeString('en-GB',{hour12:false})}","${eDateStr}","${r.endTime?'CLOSED':'ONGOING'}"\n`;});
     filename=`${R}_MaintenanceLog.csv`;
   } else if(type==='oil'){
-    // Equipment details / oil & PM log
     if(!rs.oilLog.length){alert('No oil/PM records.');return;}
     csv='Date_Time,Reactor,Motor,Event_Type,Oil_Grade,Quantity_Litres,Condition,Topup_Litres,Technician,Hours_At_Change,Notes\n';
     const sorted=[...rs.oilLog].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
@@ -1471,7 +1994,6 @@ window.downloadCSV = function(R, type){
   const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
 };
 
-/* ═══ FIREBASE LISTENERS ═══ */
 function attachListeners(R){
   onValue(ref(DBS[R],'live_data'), snap => {
     const d=snap.val(); if(!d) return;
@@ -1501,7 +2023,6 @@ function attachListeners(R){
     const d=snap.val(); state[R].maintLog=d?d:{}; renderMaintLog(R);
   });
 
-  // Oil config listener (restores last change state after page reload)
   onValue(ref(DBS[R],'oil_config'), snap => {
     const d=snap.val(); if(!d) return;
     ['M1','M2'].forEach(M => {
@@ -1515,7 +2036,6 @@ function attachListeners(R){
     });
   });
 
-  // Oil logs listener
   onValue(ref(DBS[R],'oil_logs'), snap => {
     const d=snap.val(); if(!d) return;
     const allEntries=[];
@@ -1525,7 +2045,6 @@ function attachListeners(R){
   });
 }
 
-/* ═══ SETTINGS MODAL ═══ */
 let _eR=null, _eM=null, _isLocked=true;
 window.toggleSettingsLock = function(){
   _isLocked=!_isLocked;
