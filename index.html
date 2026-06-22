@@ -1965,18 +1965,30 @@ window.downloadCSV = function(R, type){
   } else if(type==='maint'){
     const rawArr=Object.values(rs.maintLog); if(!rawArr.length){alert('No maintenance records.');return;}
     csv='Equipment,Manpower_Details,Start_DateTime,End_DateTime,Status\n';
-    rawArr.forEach(r=>{const sDate=new Date(r.startTime);const eDateStr=r.endTime?new Date(r.endTime).toLocaleDateString('en-GB')+' '+new Date(r.endTime).toLocaleTimeString('en-GB',{hour12:false}):'ONGOING';csv+=`"${r.equipment}","${r.manpower||'--'}","${sDate.toLocaleDateString('en-GB')} ${sDate.toLocaleTimeString('en-GB',{hour12:false})}","${eDateStr}","${r.endTime?'CLOSED':'ONGOING'}"\n`;});
+    rawArr.forEach(r=>{
+      const sDate=new Date(r.startTime);
+      const sDateStr=sDate.toLocaleDateString('en-GB');
+      const sTimeStr=sDate.toLocaleTimeString('en-GB',{hour12:false});
+      let eDateStr='ONGOING', eTimeStr='';
+      if(r.endTime){
+        const eDate=new Date(r.endTime);
+        eDateStr=eDate.toLocaleDateString('en-GB');
+        eTimeStr=eDate.toLocaleTimeString('en-GB',{hour12:false});
+      }
+      csv+=`"${r.equipment}","${r.manpower||'--'}","${sDateStr} ${sTimeStr}","${eDateStr} ${eTimeStr}","${r.endTime?'CLOSED':'ONGOING'}"\n`;
+    });
     filename=`${R}_MaintenanceLog.csv`;
   } else if(type==='oil'){
     if(!rs.oilLog.length){alert('No oil/PM records.');return;}
-    csv='Date_Time,Reactor,Motor,Event_Type,Oil_Grade,Quantity_Litres,Condition,Topup_Litres,Technician,Hours_At_Change,Notes\n';
+    csv='Date,Time,Reactor,Motor,Event_Type,Oil_Grade,Quantity_Litres,Condition,Topup_Litres,Technician,Hours_At_Change,Notes\n';
     const sorted=[...rs.oilLog].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     sorted.forEach(r=>{
       const d=new Date(r.timestamp);
-      const dateStr=d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-GB',{hour12:false});
+      const dateStr=d.toLocaleDateString('en-GB');
+      const timeStr=d.toLocaleTimeString('en-GB',{hour12:false});
       const isChange=r.eventType==='OIL_CHANGE';
       const oilHrsAtTime = r.oilHoursAtEvent || '--';
-      csv+=`"${dateStr}","${R}","${r.motor||'--'}","${r.eventType||'--'}","${r.grade||'--'}","${isChange?(r.qty||0):'--'}","${!isChange?(r.condition||'--'):'--'}","${!isChange?(r.topup||0):'--'}","${r.tech||'--'}","${oilHrsAtTime}","${r.notes||''}"\n`;
+      csv+=`"${dateStr}","${timeStr}","${R}","${r.motor||'--'}","${r.eventType||'--'}","${r.grade||'--'}","${isChange?(r.qty||0):'--'}","${!isChange?(r.condition||'--'):'--'}","${!isChange?(r.topup||0):'--'}","${r.tech||'--'}","${oilHrsAtTime}","${r.notes||''}"\n`;
     });
     filename=`${R}_OilPM_EquipmentDetails.csv`;
   } else {
@@ -1985,9 +1997,12 @@ window.downloadCSV = function(R, type){
     let filtered=[...rs.history].filter(row=>{const rowMs=new Date(row.timestamp).getTime();return rowMs>=startMs&&rowMs<=endMs;});
     if(!filtered.length){alert('No data for selected date/shift window.');return;}
     filtered.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).forEach(row=>{
+      const d=new Date(row.timestamp);
+      const dateStr=d.toLocaleDateString('en-GB');
+      const timeStr=d.toLocaleTimeString('en-GB',{hour12:false});
       const t1=(row.t1===-127||row.t1==='-127')?'--':Number(row.t1||0).toFixed(1);
       const t2=(row.t2===-127||row.t2==='-127')?'--':Number(row.t2||0).toFixed(1);
-      csv+=`${row.date||''},${row.time||''},${Number(row.ct1_amps||0).toFixed(2)},${t1},${Number(row.ct2_amps||0).toFixed(2)},${t2}\n`;
+      csv+=`${dateStr},${timeStr},${Number(row.ct1_amps||0).toFixed(2)},${t1},${Number(row.ct2_amps||0).toFixed(2)},${t2}\n`;
     });
     filename=`${R}_OperationalHistory.csv`;
   }
