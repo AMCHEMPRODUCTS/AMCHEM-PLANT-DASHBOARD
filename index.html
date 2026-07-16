@@ -240,7 +240,7 @@ tr:hover{background:var(--table-hover)}
 /* ===== AI Assistant Widget ===== */
 #ai-fab{position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#1a2d55,#0d1526);border:1px solid var(--cyan);color:var(--cyan);font-size:1.5rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:900;box-shadow:0 0 18px rgba(0,229,255,0.35);transition:transform .15s}
 #ai-fab:hover{transform:scale(1.08)}
-#ai-fab .ping{position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+#ai-fab .ping{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);color:#04121a;font-size:0.6rem;font-weight:900;font-family:'Orbitron',sans-serif;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.2)}
 #ai-panel{position:fixed;bottom:96px;right:24px;width:380px;max-width:92vw;height:560px;max-height:78vh;background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.6);display:none;flex-direction:column;overflow:hidden;z-index:901;font-family:'Share Tech Mono',monospace}
 #ai-panel.open{display:flex}
 #ai-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:rgba(0,229,255,0.04)}
@@ -1318,13 +1318,17 @@ window.saveMotorReg=function(){
 
 ['settings_modal','maint_modal','close_job_modal','oil_change_modal','oil_check_modal','motor_reg_modal'].forEach(id=>{ el(id).addEventListener('click',function(e){ if(e.target===this)this.classList.remove('open'); }); });
 /* ================= AI PLANT ASSISTANT (Gemini) ================= */
-const AI_MODEL = 'gemini-2.5-flash';
+const AI_MODEL = 'gemini-3.5-flash';
 const AI_KEY_STORE = 'gemini_api_key';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
+const GROQ_KEY_STORE = 'groq_api_key';
 let aiHistory = []; // {role:'user'|'model', text}
 let aiBusy = false;
 
 function getAIKey(){ try{ return localStorage.getItem(AI_KEY_STORE) || ''; }catch(e){ return ''; } }
 function setAIKey(k){ try{ localStorage.setItem(AI_KEY_STORE, k); }catch(e){} }
+function getGroqKey(){ try{ return localStorage.getItem(GROQ_KEY_STORE) || ''; }catch(e){ return ''; } }
+function setGroqKey(k){ try{ localStorage.setItem(GROQ_KEY_STORE, k); }catch(e){} }
 
 window.toggleAIPanel = function(){
   const p = el('ai-panel');
@@ -1333,7 +1337,7 @@ window.toggleAIPanel = function(){
   if(opening && !aiHistory.length){
     aiWelcome();
   }
-  if(opening && !getAIKey()){
+  if(opening && !getAIKey() && !getGroqKey()){
     el('ai-keybar').style.display = 'flex';
   }
 };
@@ -1341,19 +1345,25 @@ window.toggleAIPanel = function(){
 window.toggleAIKeybar = function(){
   const kb = el('ai-keybar');
   kb.style.display = (kb.style.display === 'none') ? 'flex' : 'none';
-  if(kb.style.display === 'flex'){ el('ai-key-input').value = getAIKey(); }
+  if(kb.style.display === 'flex'){ el('ai-key-input').value = getAIKey(); el('ai-groq-key-input').value = getGroqKey(); }
 };
 
 window.saveAIKey = function(){
   const v = el('ai-key-input').value.trim();
   if(!v){ return; }
   setAIKey(v);
-  el('ai-keybar').style.display = 'none';
-  addAIMsg('sys', 'API key saved locally in this browser.');
+  addAIMsg('sys', 'Gemini key saved locally in this browser.');
+};
+
+window.saveGroqKey = function(){
+  const v = el('ai-groq-key-input').value.trim();
+  if(!v){ return; }
+  setGroqKey(v);
+  addAIMsg('sys', 'Groq fallback key saved locally in this browser.');
 };
 
 function aiWelcome(){
-  addAIMsg('bot', "Hi, I'm your plant assistant. I can see live status across all 4 reactors — amps, temps, oil hours, alarms and maintenance. Ask me things like:");
+  addAIMsg('bot', "Hi, I'm RAI. I can see live status across all 4 reactors — amps, temps, oil hours, alarms and maintenance. Ask me things like:");
   const quick = el('ai-quick');
   const chips = [
     'Which motor has the highest temperature today?',
@@ -1388,6 +1398,10 @@ function addAITyping(){
   el('ai-msgs').scrollTop = el('ai-msgs').scrollHeight;
 }
 function removeAITyping(){ const t = el('ai-typing-indicator'); if(t) t.remove(); }
+function updateAITyping(label){
+  const t = el('ai-typing-indicator');
+  if(t) t.innerHTML = `<span></span><span></span><span></span><span style="margin-left:4px;color:var(--dim);font-size:0.65rem">${label}</span>`;
+}
 
 window.clearAIChat = function(){
   aiHistory = [];
@@ -1396,6 +1410,44 @@ window.clearAIChat = function(){
 };
 
 // Build a compact live snapshot of the whole plant for the model's context
+// Aggregate raw Firebase 'history' rows into N-day stats per motor (amps + temp + est. uptime)
+function computeMotorHistoryStats(R, M, days){
+  const rs = state[R];
+  if(!rs || !rs.history || !rs.history.length) return null;
+  const cutoff = Date.now() - days*86400000;
+  const ampsKey = M === 'M1' ? 'ct1_amps' : 'ct2_amps';
+  const tempKey = M === 'M1' ? 't1' : 't2';
+  const rows = rs.history.filter(r=> r.timestamp && new Date(r.timestamp).getTime() >= cutoff);
+  if(!rows.length) return null;
+  let sumAmps=0, maxAmps=0, sumTemp=0, tempSamples=0, maxTemp=-127, activeSamples=0;
+  rows.forEach(r=>{
+    const a = Number(r[ampsKey]||0);
+    sumAmps += a; if(a > maxAmps) maxAmps = a; if(a > 0.5) activeSamples++;
+    const t = Number(r[tempKey]);
+    if(!isNaN(t) && t !== -127){ sumTemp += t; tempSamples++; if(t > maxTemp) maxTemp = t; }
+  });
+  return {
+    days, sampleCount: rows.length,
+    avgAmps: (sumAmps/rows.length).toFixed(2), maxAmps: maxAmps.toFixed(2),
+    avgTempC: tempSamples ? (sumTemp/tempSamples).toFixed(1) : null,
+    maxTempC: maxTemp === -127 ? null : maxTemp.toFixed(1),
+    estUptimePct: (activeSamples/rows.length*100).toFixed(1)
+  };
+}
+
+// Count alarms for a specific motor within the last N days, using the ms timestamp embedded in _fbKey
+function computeMotorAlarmCount(R, M, days){
+  const rs = state[R];
+  if(!rs || !rs.alarmLog) return 0;
+  const cutoff = Date.now() - days*86400000;
+  const label = rs.motors[M] ? rs.motors[M].label : null;
+  return rs.alarmLog.filter(a=>{
+    if(!a._fbKey || a.motor !== label) return false;
+    const ts = Number(a._fbKey.split('_').pop());
+    return !isNaN(ts) && ts >= cutoff;
+  }).length;
+}
+
 function buildPlantContext(){
   const now = new Date().toLocaleString('en-GB');
   const reactors = REACTORS.map(R=>{
@@ -1410,7 +1462,9 @@ function buildPlantContext(){
         runtimeSec: mo.runSec||0, dailyKwh: Number(mo.dailyKwh||0).toFixed(3),
         inAlarm: !!mo.inAlarm, oilRunHoursSinceChange: oilHrs!=null ? Number(oilHrs).toFixed(0) : null,
         oilGrade: mo.oil ? mo.oil.grade : null,
-        thresholds: mo.thresholds, loadPct: mo.trend ? mo.trend.loadPct : null
+        thresholds: mo.thresholds, loadPct: mo.trend ? mo.trend.loadPct : null,
+        last7Days: computeMotorHistoryStats(R, M, 7),
+        alarms7d: computeMotorAlarmCount(R, M, 7)
       };
     });
     const pendingMaint = Object.values(rs.maintLog||{}).filter(j=>!j.endTime).length;
@@ -1423,18 +1477,277 @@ function buildPlantContext(){
   return { generatedAt: now, reactors };
 }
 
-const AI_SYSTEM_PROMPT = `You are an AI assistant embedded in an industrial plant dashboard (AMCHEM) monitoring 4 chemical reactors (R1-R4), each with 2 motors (M1 backup pump, M2 booster). You are given a live JSON snapshot of plant telemetry with every response: amps, temperature, oil run-hours, alarms, maintenance jobs, and load conditions.
+const AI_SYSTEM_PROMPT = `
+You are "RAI", an industrial AI Plant Assistant integrated into the AMCHEM Industry 4.0 Dashboard.
 
-Rules:
-- Base answers ONLY on the provided JSON snapshot and conversation context. If data needed to answer isn't present, say so plainly instead of guessing.
-- Be concise and operational — this is read by plant technicians and shift engineers, not analysts. Prefer short paragraphs or tight bullet lists.
-- When asked for a report, structure it with clear sections (Status / Alarms / Maintenance / Oil / Recommendations).
-- When asked for root-cause on an alarm, reason from amps vs thresholds, load trend, and recent alarm frequency for that motor.
-- When flagging oil, thresholds to use as guidance: watch above 1800 run-hours, urgent above 2000 run-hours since last change, unless told otherwise.
-- Never invent sensor values, timestamps, or events not present in the JSON.`;
+Your primary responsibility is to assist plant operators, maintenance engineers, production engineers, utility engineers, and plant managers by analyzing live plant data and providing clear, accurate, and actionable recommendations.
+
+=====================================================
+PLANT CONFIGURATION
+=====================================================
+
+The plant contains four chemical reactors:
+
+- Reactor-1 (R1)
+- Reactor-2 (R2)
+- Reactor-3 (R3)
+- Reactor-4 (R4)
+
+Each reactor includes:
+
+- Motor-1 (Vacuum Pump)
+- Motor-2 (Booster Pump)
+
+Every motor may include:
+
+- Running Status
+- Current (A)
+- Temperature (\u00b0C)
+- Oil Run Hours
+- Alarm Status
+- Maintenance Status
+- Last Service Date
+- Runtime
+- Historical Trends
+- Load Condition
+- Alarm History
+
+Every response receives a live JSON snapshot containing the latest plant telemetry. Each motor object also includes a "last7Days" field (avgAmps, maxAmps, avgTempC, maxTempC, estUptimePct, sampleCount over the trailing 7 days) and "alarms7d" (alarm count in that window) — use these for any trend, comparison, or "over the last N days" question.
+
+=====================================================
+CORE RULES
+=====================================================
+
+- NEVER invent values.
+- NEVER assume missing information.
+- Base every answer ONLY on:
+    - the supplied JSON
+    - previous conversation context
+
+If required information is unavailable, clearly state:
+
+"I don't have sufficient live data to answer that."
+
+Do NOT hallucinate.
+
+=====================================================
+RESPONSE STYLE
+=====================================================
+
+Be concise.
+
+Write like an experienced plant engineer.
+
+Avoid unnecessary explanations.
+
+Use bullet points whenever possible.
+
+When reporting abnormalities, explain:
+
+- What happened
+- Why it matters
+- Likely causes
+- Recommended actions
+- Priority
+
+Always prioritise operator action.
+
+=====================================================
+REPORT FORMAT
+=====================================================
+
+Whenever the user requests a report, use:
+
+Plant Status
+Equipment Health
+Active Alarms
+Maintenance Due
+Oil Condition
+Performance Summary
+Recommendations
+
+=====================================================
+MOTOR HEALTH ANALYSIS
+=====================================================
+
+Evaluate using:
+
+- Current vs alarm threshold
+- Temperature
+- Oil Run Hours
+- Runtime
+- Alarm frequency
+- Historical trends
+- Load condition
+
+Never evaluate using only one parameter.
+
+=====================================================
+TREND ANALYSIS
+=====================================================
+
+If "last7Days" exists, use:
+
+- avgAmps
+- maxAmps
+- avgTempC
+- maxTempC
+- estUptimePct
+- sampleCount
+- alarms7d
+
+Use these for:
+
+- Trend analysis
+- Performance comparison
+- Reliability analysis
+- Efficiency comparison
+
+If last7Days is null:
+
+Explain that historical data is not yet available for that equipment.
+
+=====================================================
+RANKING MOTORS
+=====================================================
+
+When ranking equipment, consider:
+
+1. Higher uptime
+2. Lower alarm count
+3. Stable current
+4. Lower peak temperature
+5. Lower oil hours
+6. Better reliability
+
+Explain the reasoning.
+
+=====================================================
+MAINTENANCE ANALYSIS
+=====================================================
+
+Oil Hours
+
+0-1800 hrs
+Healthy
+
+1800-2000 hrs
+Monitor
+
+>2000 hrs
+Immediate oil change recommended
+
+Maintenance
+
+Identify:
+
+- Overdue maintenance
+- Upcoming maintenance
+- Frequently failing motors
+- Components needing inspection
+
+=====================================================
+ROOT CAUSE ANALYSIS
+=====================================================
+
+When an alarm occurs, investigate using:
+
+- Current
+- Temperature
+- Load
+- Alarm history
+- Runtime
+- Historical trends
+
+Possible causes may include:
+
+- Overload
+- Dry running
+- Bearing wear
+- Blocked suction
+- Pump cavitation
+- Booster restriction
+- Mechanical binding
+- Sensor fault
+- Electrical imbalance
+
+Only suggest causes supported by available data.
+
+=====================================================
+PROACTIVE AI BEHAVIOUR
+=====================================================
+
+Do not only answer questions.
+
+If you notice:
+
+- abnormal current
+- abnormal temperature
+- excessive oil hours
+- repeated alarms
+- maintenance overdue
+- unhealthy trends
+
+proactively warn the user.
+
+=====================================================
+RECOMMENDATION STYLE
+=====================================================
+
+Always finish technical responses with:
+
+Recommended Action
+
+Examples:
+
+- Inspect pump bearings.
+- Check suction filter.
+- Verify lubrication.
+- Inspect coupling alignment.
+- Replace oil.
+- Schedule preventive maintenance.
+- Monitor motor for next 24 hours.
+
+=====================================================
+PLANT KNOWLEDGE
+=====================================================
+
+Understand concepts including:
+
+- Chemical reactors
+- Vacuum systems
+- Booster pumps
+- Vacuum pumps
+- Motors
+- Bearings
+- Gearboxes
+- Oil lubrication
+- Predictive Maintenance
+- Preventive Maintenance
+- Condition Monitoring
+- Motor loading
+- Industrial alarms
+- Plant reliability
+- Root cause analysis
+- Equipment health
+- Production support
+
+=====================================================
+PERSONALITY
+=====================================================
+
+You are calm, confident, practical and professional.
+
+You behave like a senior plant engineer with years of experience.
+
+Never behave like a generic chatbot.
+
+Your goal is to improve plant reliability, reduce downtime, improve safety, and help operators make better decisions.
+`;
 
 async function callGemini(userText, contextObj){
   const key = getAIKey();
+  if(!key) throw new Error('NO_GEMINI_KEY');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent`;
 
   const contents = [];
@@ -1449,27 +1762,122 @@ async function callGemini(userText, contextObj){
   const body = {
     system_instruction: { parts: [{ text: AI_SYSTEM_PROMPT }] },
     contents,
-    generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+    generationConfig: { temperature: 0.3, maxOutputTokens: 4096 }
   };
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-    body: JSON.stringify(body)
+  const MAX_RETRIES = 2;
+  let lastErr = null;
+  for(let attempt = 0; attempt <= MAX_RETRIES; attempt++){
+    let res;
+    try{
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify(body)
+      });
+    }catch(networkErr){
+      lastErr = new Error('NETWORK_ERROR');
+      break;
+    }
+
+    if(res.ok){
+      const data = await res.json();
+      let text = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '(No response text returned.)';
+      if(data?.candidates?.[0]?.finishReason === 'MAX_TOKENS'){
+        text += '\n\n[Response was cut off at the token limit — ask "continue" for the rest, or narrow the question.]';
+      }
+      return { text, provider: 'Gemini' };
+    }
+
+    const retryable = (res.status === 503 || res.status === 429);
+    if(retryable && attempt < MAX_RETRIES){
+      if(attempt === 0) updateAITyping('Gemini is busy, retrying…');
+      const waitMs = 1000 * Math.pow(2, attempt); // 1s, 2s
+      await new Promise(r => setTimeout(r, waitMs));
+      continue;
+    }
+
+    lastErr = new Error(`GEMINI_HTTP_${res.status}`);
+    break;
+  }
+  throw lastErr;
+}
+
+async function callGroq(userText, contextObj){
+  const key = getGroqKey();
+  if(!key) throw new Error('NO_GROQ_KEY');
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+
+  const messages = [{ role: 'system', content: AI_SYSTEM_PROMPT }];
+  aiHistory.forEach(m=>{
+    messages.push({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text });
+  });
+  messages.push({
+    role: 'user',
+    content: `LIVE PLANT SNAPSHOT (JSON):\n${JSON.stringify(contextObj)}\n\nQUESTION: ${userText}`
   });
 
-  if(!res.ok){
-    const errText = await res.text().catch(()=> '');
-    let msg = `Gemini API error (${res.status}).`;
-    if(res.status === 400) msg = 'Invalid request or invalid API key. Check the key in settings (⚙).';
-    else if(res.status === 403) msg = 'API key rejected. Generate a new one at Google AI Studio and re-save it.';
-    else if(res.status === 429) msg = 'Free-tier rate limit hit. Wait a bit and try again.';
-    throw new Error(msg + (errText ? ` ${errText.slice(0,200)}` : ''));
+  let res;
+  try{
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0.3, max_tokens: 4096 })
+    });
+  }catch(networkErr){
+    throw new Error('NETWORK_ERROR');
   }
 
+  if(!res.ok){
+    throw new Error(`GROQ_HTTP_${res.status}`);
+  }
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '(No response text returned.)';
-  return text;
+  const text = data?.choices?.[0]?.message?.content || '(No response text returned.)';
+  return { text, provider: 'Groq (fallback)' };
+}
+
+// Tries Gemini first; on any Gemini failure (busy/down/no key), silently falls back to Groq if a Groq key is set.
+async function callAI(userText, contextObj){
+  const hasGemini = !!getAIKey();
+  const hasGroq = !!getGroqKey();
+
+  if(!hasGemini && !hasGroq){
+    throw new Error('Add a Gemini and/or Groq API key in settings (⚙) to start chatting.');
+  }
+
+  if(hasGemini){
+    try{
+      return await callGemini(userText, contextObj);
+    }catch(err){
+      if(!hasGroq) throw new Error(describeAIError(err.message));
+      updateAITyping('Gemini unavailable, switching to Groq…');
+    }
+  }
+
+  if(hasGroq){
+    try{
+      return await callGroq(userText, contextObj);
+    }catch(err){
+      throw new Error(describeAIError(err.message));
+    }
+  }
+  throw new Error('No working AI provider available right now.');
+}
+
+function describeAIError(code){
+  const map = {
+    NO_GEMINI_KEY: 'No Gemini key set.',
+    NO_GROQ_KEY: 'No Groq key set.',
+    NETWORK_ERROR: 'Network error — check your internet connection.',
+    GEMINI_HTTP_400: 'Gemini rejected the request — invalid API key. Check settings (⚙).',
+    GEMINI_HTTP_403: 'Gemini API key rejected. Generate a new one at Google AI Studio and re-save it.',
+    GEMINI_HTTP_429: 'Gemini free-tier rate limit hit.',
+    GEMINI_HTTP_503: "Gemini's servers are overloaded right now.",
+    GROQ_HTTP_401: 'Groq rejected the request — invalid API key. Check settings (⚙).',
+    GROQ_HTTP_429: 'Groq free-tier rate limit hit.',
+    GROQ_HTTP_503: "Groq's servers are overloaded right now."
+  };
+  return map[code] || `AI request failed (${code}). Both providers may be unavailable — try again shortly.`;
 }
 
 window.sendAIMessage = async function(){
@@ -1478,9 +1886,9 @@ window.sendAIMessage = async function(){
   const text = input.value.trim();
   if(!text) return;
 
-  if(!getAIKey()){
+  if(!getAIKey() && !getGroqKey()){
     el('ai-keybar').style.display = 'flex';
-    addAIMsg('sys', 'Add your free Gemini API key above to start chatting.');
+    addAIMsg('sys', 'Add a Gemini and/or Groq API key above to start chatting.');
     return;
   }
 
@@ -1492,15 +1900,16 @@ window.sendAIMessage = async function(){
 
   try{
     const ctx = buildPlantContext();
-    const reply = await callGemini(text, ctx);
+    const { text: reply, provider } = await callAI(text, ctx);
     removeAITyping();
     addAIMsg('bot', reply);
+    if(provider !== 'Gemini') addAIMsg('sys', `Answered via ${provider}`);
     aiHistory.push({ role: 'user', text });
     aiHistory.push({ role: 'model', text: reply });
     if(aiHistory.length > 20) aiHistory = aiHistory.slice(-20);
   }catch(err){
     removeAITyping();
-    addAIMsg('err', err.message || 'Something went wrong talking to Gemini.');
+    addAIMsg('err', err.message || 'Something went wrong talking to the AI provider.');
   }finally{
     aiBusy = false;
     el('ai-send').disabled = false;
@@ -1519,10 +1928,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 </script>
 <!-- ===== AI Assistant Widget ===== -->
-<div id="ai-fab" onclick="toggleAIPanel()" title="AI Plant Assistant">🤖<div class="ping"></div></div>
+<div id="ai-fab" onclick="toggleAIPanel()" title="RAI">🤖<div class="ping">R</div></div>
 <div id="ai-panel">
   <div id="ai-head">
-    <div class="t">🤖 AI PLANT ASSISTANT <span style="color:var(--dim);font-size:0.6rem;font-weight:400">· Gemini</span></div>
+    <div class="t">🤖 RAI</div>
     <div class="actions">
       <button onclick="toggleAIKeybar()" title="API key settings">⚙</button>
       <button onclick="clearAIChat()" title="Clear chat">🗑</button>
@@ -1530,17 +1939,24 @@ document.addEventListener('DOMContentLoaded', ()=>{
     </div>
   </div>
   <div id="ai-keybar" style="display:none">
-    <div>Enter your free Gemini API key (from <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>). Stored only in this browser.</div>
+    <div>Primary — Gemini key (from <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>):</div>
     <div class="row">
       <input id="ai-key-input" type="password" placeholder="AIza..." style="flex:1">
       <button onclick="saveAIKey()">Save</button>
     </div>
+    <div>Fallback — Groq key (from <a href="https://console.groq.com/keys" target="_blank">Groq Console</a>), used automatically if Gemini is busy/down:</div>
+    <div class="row">
+      <input id="ai-groq-key-input" type="password" placeholder="gsk_..." style="flex:1">
+      <button onclick="saveGroqKey()">Save</button>
+    </div>
+    <div style="font-size:0.62rem;opacity:.75">Both keys are stored only in this browser's local storage — never sent anywhere except directly to Google/Groq.</div>
   </div>
   <div id="ai-msgs"></div>
   <div id="ai-quick"></div>
   <div id="ai-inputrow">
     <textarea id="ai-input" rows="1" placeholder="Ask about motors, alarms, oil, trends..."></textarea>
     <button id="ai-send" onclick="sendAIMessage()">➤</button>
+
   </div>
 </div>
 </body>
