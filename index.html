@@ -273,6 +273,13 @@ tr:hover{background:var(--table-hover)}
 #ai-keybar a{color:var(--cyan);text-decoration:none}
 #ai-keybar .row{display:flex;gap:6px}
 #ai-keybar button{background:var(--cyan);border:none;color:#04121a;border-radius:6px;padding:0 12px;cursor:pointer;font-weight:700;font-size:0.7rem}
+.rai-mini-btn{background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.35);color:var(--cyan);border-radius:6px;padding:2px 7px;font-size:0.6rem;cursor:pointer;margin-left:4px}
+.rai-mini-btn:hover{background:rgba(0,229,255,0.18)}
+.rai-inline-btn{width:100%;margin-top:6px;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.3);color:var(--cyan);border-radius:6px;padding:5px;font-size:0.6rem;cursor:pointer;font-family:'Share Tech Mono',monospace}
+.rai-inline-btn:hover{background:rgba(0,229,255,0.15)}
+.ai-msg.proactive{align-self:flex-start;background:rgba(255,109,0,0.08);border:1px solid rgba(255,109,0,0.4);color:#ffb060}
+#ai-digest-btn{width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);color:var(--grey);border-radius:6px;padding:6px;font-size:0.65rem;cursor:pointer;font-family:'Share Tech Mono',monospace}
+#ai-digest-btn:hover{border-color:var(--cyan);color:var(--cyan)}
 </style>
 <base target="_blank">
 <base target="_blank">
@@ -760,7 +767,8 @@ function renderMotorHealthPanel(R, M){
       <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.55rem;color:#4a5a7a">
         <span>Trend: <b style="color:${tr.slopePerDay > 1 ? '#ff6d00' : '#39ff14'}">${tr.slopePerDay > 0 ? '+' : ''}${tr.slopePerDay.toFixed(1)}%/day</b></span>
         <span>Confidence: <b style="color:${tr.confidence === 'high' ? '#39ff14' : tr.confidence === 'medium' ? '#ffea00' : '#4a5a7a'}">${tr.confidence.toUpperCase()}</b></span>
-      </div>` : ''}`;
+      </div>` : ''}
+    <button class="rai-inline-btn" onclick="aiExplainTrend('${R}','${M}')">🤖 Explain this trend</button>`;
 }
 
 function renderGlobalKPIs(){
@@ -806,14 +814,14 @@ function renderLog(R, arr, tbodyId, countId, mapper){
   el(countId).textContent=arr.length; const b=el(tbodyId); if(!b)return;
   b.innerHTML=arr.length?[...arr].map(mapper).join(''):`<tr><td colspan="6" class="no-data">No records</td></tr>`;
 }
-function renderAlarmLog(R){ renderLog(R, state[R].alarmLog, `${R}_alarm_log`, `${R}_alarm_count`, (r,i)=>`<tr class="${r.acked?'row-alarm acked':'row-alarm'}"><td>${r.time}</td><td>${r.motor.substring(0,2)}</td><td>${r.amps}A</td><td>${r.acked?`<button class="ack-btn acked" disabled>✔ ${r.ackTime}</button>`:`<button class="ack-btn" onclick="ackAlarm('${R}',${i})">ACK</button>`}</td></tr>`); }
+function renderAlarmLog(R){ renderLog(R, state[R].alarmLog, `${R}_alarm_log`, `${R}_alarm_count`, (r,i)=>`<tr class="${r.acked?'row-alarm acked':'row-alarm'}"><td>${r.time}</td><td>${r.motor.substring(0,2)}</td><td>${r.amps}A</td><td>${r.acked?`<button class="ack-btn acked" disabled>✔ ${r.ackTime}</button>`:`<button class="ack-btn" onclick="ackAlarm('${R}',${i})">ACK</button>`} <button class="rai-mini-btn" onclick="aiRootCause('${R}',${i})" title="Ask RAI to root-cause this alarm">🤖 RCA</button></td></tr>`); }
 function renderOilLog(R){ renderLog(R, state[R].oilLog, `${R}_oil_log`, `${R}_oil_count`, r=>`<tr class="row-oil"><td>${new Date(r.timestamp).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${r.motor||'--'}</td><td>${r.eventType==='OIL_CHANGE'?'<span class="clr-warn">🔄 CHANGE</span>':'<span class="clr-cyan">✔ CHECK</span>'}</td><td>${r.grade||'--'}</td><td>${r.eventType==='OIL_CHANGE'?(r.qty?r.qty+'L':'--'):(r.topup>0?'+'+r.topup+'L':r.condition||'--')}</td><td>${r.tech||'--'}</td></tr>`); }
 function renderMaintLog(R){
   const arr=Object.entries(state[R].maintLog), pend=arr.filter(([k,m])=>!m.endTime).length;
   el(`${R}_maint_count`).textContent=pend>0?`${pend} Pending`:'All Clear'; el(`${R}_maint_count`).className=`log-count ${pend>0?'lc-oil':'lc-maint'}`; updateReactorStatusBadge(R);
   renderLog(R, arr.sort((a,b)=>b.timestamp-a.timestamp), `${R}_maint_log`, `${R}_maint_count`, ([k,r])=>{
     const s=new Date(r.startTime).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}), rng=r.endTime?`${s} ➡️ ${new Date(r.endTime).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:`${s} ➡️ ONGOING`;
-    return `<tr class="row-maint"><td><b>${r.equipment}</b></td><td class="clr-grey">${r.manpower||'--'}</td><td class="clr-grey">${r.jobDetails||'--'}</td><td>${rng}</td><td>${r.endTime?'<span class="clr-green">CLOSED</span>':`<button class="close-job-btn" onclick="launchCompletionModalOverlay('${R}','${k}')">Close</button>`}</td></tr>`;
+    return `<tr class="row-maint"><td><b>${r.equipment}</b></td><td class="clr-grey">${r.manpower||'--'}</td><td class="clr-grey">${r.jobDetails||'--'}</td><td>${rng}</td><td>${r.endTime?'<span class="clr-green">CLOSED</span>':`<button class="close-job-btn" onclick="launchCompletionModalOverlay('${R}','${k}')">Close</button>`} <button class="rai-mini-btn" onclick="aiDraftMaintNote('${R}','${k}')" title="Ask RAI to draft a maintenance note">🤖 Note</button></td></tr>`;
   });
   el(`${R}_maint_count`).textContent=pend>0?`${pend} Pending`:'All Clear';
 }
@@ -1334,6 +1342,7 @@ window.toggleAIPanel = function(){
   const p = el('ai-panel');
   const opening = !p.classList.contains('open');
   p.classList.toggle('open');
+  if(opening){ el('ai-fab').style.boxShadow = ''; }
   if(opening && !aiHistory.length){
     aiWelcome();
   }
@@ -1880,10 +1889,10 @@ function describeAIError(code){
   return map[code] || `AI request failed (${code}). Both providers may be unavailable — try again shortly.`;
 }
 
-window.sendAIMessage = async function(){
+window.sendAIMessage = async function(presetText){
   if(aiBusy) return;
   const input = el('ai-input');
-  const text = input.value.trim();
+  const text = (typeof presetText === 'string' ? presetText : input.value).trim();
   if(!text) return;
 
   if(!getAIKey() && !getGroqKey()){
@@ -1893,7 +1902,8 @@ window.sendAIMessage = async function(){
   }
 
   addAIMsg('user', text);
-  input.value = '';
+  persistAIMessage('user', text);
+  if(!presetText) input.value = '';
   aiBusy = true;
   el('ai-send').disabled = true;
   addAITyping();
@@ -1903,6 +1913,7 @@ window.sendAIMessage = async function(){
     const { text: reply, provider } = await callAI(text, ctx);
     removeAITyping();
     addAIMsg('bot', reply);
+    persistAIMessage('model', reply);
     if(provider !== 'Gemini') addAIMsg('sys', `Answered via ${provider}`);
     aiHistory.push({ role: 'user', text });
     aiHistory.push({ role: 'model', text: reply });
@@ -1916,6 +1927,172 @@ window.sendAIMessage = async function(){
   }
 };
 
+/* ---------- One-click contextual actions ---------- */
+function openAIPanelIfClosed(){
+  const p = el('ai-panel');
+  if(!p.classList.contains('open')){ toggleAIPanel(); }
+}
+
+window.aiRootCause = function(R, alarmIndex){
+  const rs = state[R];
+  const a = rs.alarmLog[alarmIndex];
+  if(!a){ return; }
+  openAIPanelIfClosed();
+  const q = `Root-cause this alarm: Reactor ${R}, motor ${a.motor}, ${a.amps}A at ${a.time} on ${a.date}. Use current readings, thresholds, load trend, and recent alarm frequency for this motor to explain the likely cause and recommended action.`;
+  sendAIMessage(q);
+};
+
+window.aiExplainTrend = function(R, M){
+  const mot = state[R].motors[M];
+  openAIPanelIfClosed();
+  const q = `Explain the current load/temperature trend for ${R}-${M} (${mot.label}). Cover where it sits vs its thresholds, direction over the last 7 days, and whether any action is needed.`;
+  sendAIMessage(q);
+};
+
+window.aiDraftMaintNote = function(R, jobKey){
+  const job = state[R].maintLog[jobKey];
+  if(!job){ return; }
+  openAIPanelIfClosed();
+  const q = `Draft a concise maintenance work-order note for this job on ${R}: equipment "${job.equipment}", manpower "${job.manpower||'--'}", details "${job.jobDetails||'--'}", started ${new Date(job.startTime).toLocaleString('en-GB')}${job.endTime? ', closed '+new Date(job.endTime).toLocaleString('en-GB') : ' (ongoing)'}. Write it the way a plant engineer would log it in a maintenance record.`;
+  sendAIMessage(q);
+};
+
+/* ---------- Chat history persistence (per shift, stored in R1's Firebase) ---------- */
+function getCurrentShiftId(){
+  const now = new Date();
+  const h = now.getHours();
+  const dateStr = now.toISOString().slice(0,10);
+  const shift = (h>=6 && h<14) ? 'morning' : (h>=14 && h<22) ? 'evening' : 'night';
+  // Night shift spans midnight — anchor 00:00-06:00 to the previous calendar day's night shift
+  if(shift === 'night' && h < 6){
+    const prev = new Date(now.getTime() - 86400000);
+    return `${prev.toISOString().slice(0,10)}_night`;
+  }
+  return `${dateStr}_${shift}`;
+}
+const AI_CHAT_DB = DBS['R1']; // shared chat log lives under Reactor-1's project
+const currentShiftId = getCurrentShiftId();
+
+function persistAIMessage(role, text){
+  try{
+    push(ref(AI_CHAT_DB, `ai_chat_history/${currentShiftId}`), { role, text, ts: Date.now() });
+  }catch(e){ /* non-fatal */ }
+}
+
+function loadShiftChatHistory(){
+  get(ref(AI_CHAT_DB, `ai_chat_history/${currentShiftId}`)).then(snap=>{
+    const v = snap.val();
+    if(!v) return;
+    const rows = Object.values(v).sort((a,b)=>a.ts-b.ts);
+    if(!rows.length) return;
+    el('ai-msgs').innerHTML = '';
+    el('ai-quick').innerHTML = '';
+    addAIMsg('sys', `Loaded ${rows.length} messages from this shift (${currentShiftId.replace('_',' ')}).`);
+    rows.forEach(r=>{
+      addAIMsg(r.role === 'user' ? 'user' : (r.role === 'proactive' ? 'proactive' : 'bot'), r.text);
+      if(r.role !== 'proactive'){ aiHistory.push({ role: r.role, text: r.text }); }
+    });
+    if(aiHistory.length > 20) aiHistory = aiHistory.slice(-20);
+  }).catch(()=>{});
+}
+
+/* ---------- Proactive background monitoring ---------- */
+const PROACTIVE_SCAN_MS = 5 * 60 * 1000; // every 5 minutes
+const PROACTIVE_COOLDOWN_MS = 60 * 60 * 1000; // don't repeat the same finding within an hour
+let proactiveCooldowns = {}; // signature -> last-alerted timestamp
+
+function evaluateProactiveFindings(){
+  const findings = [];
+  REACTORS.forEach(R=>{
+    const rs = state[R];
+    if(!rs.online) return;
+    ['M1','M2'].forEach(M=>{
+      const mot = rs.motors[M];
+      const id = `${R}-${M}`;
+
+      // Trend: compare avg amps in the last hour vs the prior hour, from raw history
+      if(rs.history && rs.history.length){
+        const now = Date.now();
+        const lastHour = rs.history.filter(r=>r.timestamp && now - new Date(r.timestamp).getTime() <= 3600000);
+        const prevHour = rs.history.filter(r=>r.timestamp && (now - new Date(r.timestamp).getTime() > 3600000) && (now - new Date(r.timestamp).getTime() <= 7200000));
+        const key = M === 'M1' ? 'ct1_amps' : 'ct2_amps';
+        if(lastHour.length >= 5 && prevHour.length >= 5){
+          const avg = arr => arr.reduce((s,r)=>s+Number(r[key]||0),0)/arr.length;
+          const a1 = avg(prevHour), a2 = avg(lastHour);
+          if(a1 > 0.5){
+            const pctChange = ((a2 - a1) / a1) * 100;
+            if(pctChange >= 15){
+              findings.push({ sig:`${id}-trend-up`, text:`🔔 ${id} (${mot.label}) amps trending up ${pctChange.toFixed(0)}% over the last 2 hours — worth a look.` });
+            }
+          }
+        }
+      }
+
+      // Oil hours
+      const oilHrs = mot.oil ? mot.oil.oilRunHoursSinceChange : null;
+      if(oilHrs != null){
+        if(oilHrs >= OIL_CHANGE_INTERVAL){
+          findings.push({ sig:`${id}-oil-urgent`, text:`🛢 ${id} (${mot.label}) is at ${Math.round(oilHrs)} run-hours since last oil change — immediate oil change recommended.` });
+        }else if(oilHrs >= OIL_CAUTION_HOURS){
+          findings.push({ sig:`${id}-oil-watch`, text:`🛢 ${id} (${mot.label}) is at ${Math.round(oilHrs)} run-hours since last oil change — schedule an oil change soon.` });
+        }
+      }
+
+      // Active alarm
+      if(mot.inAlarm){
+        findings.push({ sig:`${id}-inalarm`, text:`🚨 ${id} (${mot.label}) is currently in an alarm state at ${Number(mot.amps).toFixed(2)}A.` });
+      }
+    });
+
+    // Overdue maintenance
+    const pending = Object.values(rs.maintLog||{}).filter(j=>!j.endTime);
+    if(pending.length){
+      findings.push({ sig:`${R}-maint-pending-${pending.length}`, text:`📋 ${R} has ${pending.length} open maintenance job${pending.length>1?'s':''} awaiting close-out.` });
+    }
+  });
+  return findings;
+}
+
+function runProactiveScan(){
+  const findings = evaluateProactiveFindings();
+  const now = Date.now();
+  findings.forEach(f=>{
+    const last = proactiveCooldowns[f.sig];
+    if(last && (now - last) < PROACTIVE_COOLDOWN_MS) return;
+    proactiveCooldowns[f.sig] = now;
+    addAIMsg('proactive', f.text);
+    persistAIMessage('proactive', f.text);
+    if(!el('ai-panel').classList.contains('open')){
+      el('ai-fab').style.boxShadow = '0 0 22px 6px rgba(255,109,0,0.6)';
+    }
+  });
+}
+setInterval(runProactiveScan, PROACTIVE_SCAN_MS);
+
+/* ---------- Weekly digest export (CSV) ---------- */
+window.exportWeeklyDigest = function(){
+  const ctx = buildPlantContext();
+  const rows = [['Reactor','Motor','Condition','Amps Now','Peak Amps','Peak Temp C','Oil Hrs','Alarms (7d)','Avg Amps (7d)','Max Amps (7d)','Avg Temp C (7d)','Max Temp C (7d)','Est. Uptime % (7d)']];
+  ctx.reactors.forEach(r=>{
+    r.motors.forEach(m=>{
+      const h = m.last7Days;
+      rows.push([
+        r.reactor, m.label, m.condition, m.amps, m.peakAmps, m.peakTempC ?? '',
+        m.oilRunHoursSinceChange ?? '', m.alarms7d,
+        h ? h.avgAmps : '', h ? h.maxAmps : '', h ? h.avgTempC : '', h ? h.maxTempC : '', h ? h.estUptimePct : ''
+      ]);
+    });
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `plant-health-digest_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  addAIMsg('sys', 'Weekly health digest CSV downloaded.');
+};
+
 document.addEventListener('DOMContentLoaded', ()=>{
   const inp = el('ai-input');
   if(inp){
@@ -1924,6 +2101,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
     inp.addEventListener('input', ()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,90)+'px'; });
   }
+  loadShiftChatHistory();
 });
 
 </script>
@@ -1953,6 +2131,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   </div>
   <div id="ai-msgs"></div>
   <div id="ai-quick"></div>
+  <div style="padding:0 12px 8px">
+    <button id="ai-digest-btn" onclick="exportWeeklyDigest()">⬇ Download Weekly Health Digest (CSV)</button>
+  </div>
   <div id="ai-inputrow">
     <textarea id="ai-input" rows="1" placeholder="Ask about motors, alarms, oil, trends..."></textarea>
     <button id="ai-send" onclick="sendAIMessage()">➤</button>
